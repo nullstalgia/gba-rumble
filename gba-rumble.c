@@ -1,5 +1,6 @@
 #include <stdbool.h>
-#include "rumble.h"
+#include "gba-rumble.h"
+#include "gba-rumble-cart.h"
 
 
 /*
@@ -42,9 +43,6 @@ typedef unsigned int u32;
 typedef unsigned short u16;
 
 
-#define GPIO_PORT_DATA        (*(volatile u16 *)0x80000C4)
-#define GPIO_PORT_DIRECTION   (*(volatile u16 *)0x80000C6)
-
 #define REG_BASE 0x04000000
 
 #define REG_RCNT              *(volatile u16*)(REG_BASE + 0x134)
@@ -58,10 +56,9 @@ typedef unsigned short u16;
 
 #define R_NORMAL 0x0000
 
-
-static bool gbp_configured;
-static enum RumbleState rumble_state;
-
+static enum GBARumbleCartType rumble_cart_type = gba_rumble_cart_uninitialized;
+static enum GBARumbleState rumble_state = gba_rumble_stop;
+static bool gbp_configured = false;
 
 enum GBPCommsStage {
     gbp_comms_nintendo_handshake,
@@ -174,42 +171,70 @@ static void gbp_serial_isr()
 }
 
 
-void rumble_init(struct RumbleGBPConfig* config)
-{
-    rumble_state = rumble_stop;
+void gba_rumble_init_gbp(struct GBARumbleGBPConfig config) {
+    rumble_state = gba_rumble_stop;
 
-    if (config) {
-        config->serial_irq_setup_(gbp_serial_isr);
-        REG_RCNT = R_NORMAL;
-        REG_SIOCNT = SIO_32BIT | SIO_SO_HIGH;
-        REG_SIOCNT |= SIO_IRQ;
-        gbp_configured = true;
-        gbp_comms.serial_in_ = 0;
-        gbp_comms.stage_ = gbp_comms_nintendo_handshake;
-        gbp_comms.index_ = 0;
-        gbp_comms.out_0_ = 0;
-        gbp_comms.out_1_ = 0;
-    } else {
-        gbp_configured = false;
-
-    }
+    config.serial_irq_setup_(gbp_serial_isr);
+    REG_RCNT = R_NORMAL;
+    REG_SIOCNT = SIO_32BIT | SIO_SO_HIGH;
+    REG_SIOCNT |= SIO_IRQ;
+    gbp_configured = true;
+    gbp_comms.serial_in_ = 0;
+    gbp_comms.stage_ = gbp_comms_nintendo_handshake;
+    gbp_comms.index_ = 0;
+    gbp_comms.out_0_ = 0;
+    gbp_comms.out_1_ = 0;
 }
 
+void gba_rumble_init_cart(enum GBARumbleCartType cart_type) {
+    rumble_state = gba_rumble_stop;
 
-void rumble_update()
+    switch (cart_type) {
+        case gba_rumble_cart_gpio:
+            gba_rumble_gpio_init();
+            break;
+        case gba_rumble_cart_ezode:
+            gba_rumble_ezode_init();
+            break;
+        case gba_rumble_cart_ez3in1:
+            gba_rumble_ez3in1_init();
+            break;
+
+        default:
+            return;
+    }
+    rumble_cart_type = cart_type;
+
+    gba_rumble_update(gba_rumble_stop);
+}
+
+void gba_rumble_loop()
 {
     if (gbp_configured) {
         gbp_serial_start();
     }
 }
 
-
-void rumble_set_state(enum RumbleState state)
+void gba_rumble_update(enum GBARumbleState state)
 {
     rumble_state = state;
 
-    if (!gbp_configured) {
-        GPIO_PORT_DIRECTION = 1 << 3;
-        GPIO_PORT_DATA = (rumble_state == rumble_start) << 3;
+    if (!gbp_configured && rumble_cart_type != gba_rumble_cart_uninitialized) {
+        const bool rumble_on = state == gba_rumble_start;
+
+        switch (rumble_cart_type) {
+            case gba_rumble_cart_gpio:
+                gba_rumble_gpio_update(rumble_on);
+                break;
+            case gba_rumble_cart_ezode:
+                gba_rumble_ezode_update(rumble_on);
+                break;
+            case gba_rumble_cart_ez3in1:
+                gba_rumble_ez3in1_update(rumble_on);
+                break;
+
+            default:
+                return;
+        }
     }
 }
