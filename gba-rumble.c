@@ -60,6 +60,8 @@ static enum GBARumbleCartType rumble_cart_type = gba_rumble_cart_uninitialized;
 static enum GBARumbleState rumble_state = gba_rumble_stop;
 static bool gbp_configured = false;
 
+static void (*cart_rumble_update_func)(bool rumble_on) = 0;
+
 enum GBPCommsStage {
     gbp_comms_nintendo_handshake,
     gbp_comms_check_magic1,
@@ -192,12 +194,15 @@ void gba_rumble_init_cart(enum GBARumbleCartType cart_type) {
     switch (cart_type) {
         case gba_rumble_cart_gpio:
             gba_rumble_gpio_init();
+            cart_rumble_update_func = gba_rumble_gpio_update;
             break;
         case gba_rumble_cart_ezode:
             gba_rumble_ezode_init();
+            cart_rumble_update_func = gba_rumble_ezode_update;
             break;
         case gba_rumble_cart_ez3in1:
             gba_rumble_ez3in1_init();
+            cart_rumble_update_func = gba_rumble_ez3in1_update;
             break;
 
         default:
@@ -220,21 +225,11 @@ void gba_rumble_update(enum GBARumbleState state)
     rumble_state = state;
 
     if (!gbp_configured && rumble_cart_type != gba_rumble_cart_uninitialized) {
+        if (!cart_rumble_update_func)
+            return;
+
         const bool rumble_on = state == gba_rumble_start;
 
-        switch (rumble_cart_type) {
-            case gba_rumble_cart_gpio:
-                gba_rumble_gpio_update(rumble_on);
-                break;
-            case gba_rumble_cart_ezode:
-                gba_rumble_ezode_update(rumble_on);
-                break;
-            case gba_rumble_cart_ez3in1:
-                gba_rumble_ez3in1_update(rumble_on);
-                break;
-
-            default:
-                return;
-        }
+        cart_rumble_update_func(rumble_on);
     }
 }
