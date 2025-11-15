@@ -10,11 +10,14 @@ extern "C" {
 #define EZ3IN1_MAX_RUMBLE  0x7
 #define EZ3IN1_STOP_RUMBLE 0x8
 
-// Initializes Pak IO Pin 3 Direction as Output,
-void gba_rumble_gpio_init();
+// Initializes ROM GPIO Pin 3 Direction as Output,
+void gba_rumble_rio_init();
 
-// Set GPIO Rumble active state.
-void gba_rumble_gpio_update(bool rumble);
+// Set RIO Rumble active state.
+//
+// Define `GBA_RUMBLE_RIO_SHARE` before inclusion to bitwise OR IO3 rather than just set the whole register's value.
+// (Useful if you intend to share the ROM IO pins with RTC or some other custom setup.)
+void gba_rumble_rio_update(bool rumble);
 
 // Initalize EZ-Flash Omega Definitive Edition's Rumble, sets strength to max and sets state to idle.
 void gba_rumble_ezode_init();

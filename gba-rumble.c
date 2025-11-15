@@ -56,11 +56,16 @@ typedef unsigned short u16;
 
 #define R_NORMAL 0x0000
 
-static enum GBARumbleCartType rumble_cart_type = gba_rumble_cart_uninitialized;
+// Shared Local Variables
 static enum GBARumbleState rumble_state = gba_rumble_stop;
+
+// Cartridge Rumble Variables
+static enum GBARumbleCartType rumble_cart_type = gba_rumble_cart_uninitialized;
+static void (*cart_rumble_update_func)(bool rumble_on) = 0;
+
+// Game Boy Player Variables and Types
 static bool gbp_configured = false;
 
-static void (*cart_rumble_update_func)(bool rumble_on) = 0;
 
 enum GBPCommsStage {
     gbp_comms_nintendo_handshake,
@@ -173,7 +178,8 @@ static void gbp_serial_isr()
 }
 
 
-void gba_rumble_init_gbp(struct GBARumbleGBPConfig config) {
+void gba_rumble_init_gbp(struct GBARumbleGBPConfig config)
+{
     rumble_state = gba_rumble_stop;
 
     config.serial_irq_setup_(gbp_serial_isr);
@@ -188,13 +194,15 @@ void gba_rumble_init_gbp(struct GBARumbleGBPConfig config) {
     gbp_comms.out_1_ = 0;
 }
 
-void gba_rumble_init_cart(enum GBARumbleCartType cart_type) {
-    rumble_state = gba_rumble_stop;
+void gba_rumble_init_cart(enum GBARumbleCartType cart_type)
+{
+    // Set previous rumble cart impl's state to idle, in case cart supports both (i.e. ChisFlash v1.2)
+    gba_rumble_update(gba_rumble_stop);
 
     switch (cart_type) {
-        case gba_rumble_cart_gpio:
-            gba_rumble_gpio_init();
-            cart_rumble_update_func = gba_rumble_gpio_update;
+        case gba_rumble_cart_rio:
+            gba_rumble_rio_init();
+            cart_rumble_update_func = gba_rumble_rio_update;
             break;
         case gba_rumble_cart_ezode:
             gba_rumble_ezode_init();
@@ -217,6 +225,11 @@ void gba_rumble_loop()
 {
     if (gbp_configured) {
         gbp_serial_start();
+    } else if (rumble_cart_type == gba_rumble_cart_rio) {
+        // Ensure ROM GPIO direction is correct.
+        // (Leaving this out of the update function in case update is called
+        // in an ISR, admittedely shaving off only just a couple cycles.)
+        gba_rumble_rio_init();
     }
 }
 

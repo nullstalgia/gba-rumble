@@ -20,7 +20,7 @@ enum GBARumbleState {
 
 enum GBARumbleCartType : uint8_t {
     gba_rumble_cart_uninitialized,
-    gba_rumble_cart_gpio,
+    gba_rumble_cart_rio,
     gba_rumble_cart_ezode,
     gba_rumble_cart_ez3in1,
 };
