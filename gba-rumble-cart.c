@@ -39,7 +39,7 @@ void gba_rumble_ezflash_init() {
     gba_rumble_rio_init();
     gba_rumble_ds_init();
     gba_rumble_ezflash_write_rumble(EZ3IN1_STOP_RUMBLE);
-    gba_rumble_ezflash_write_rumble(EZODE_MIN_RUMBLE);
+    gba_rumble_ezflash_write_rumble(EZFLASH_MIN_RUMBLE);
 }
 
 void gba_rumble_ezflash_update(bool rumble_on) {

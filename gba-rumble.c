@@ -217,7 +217,7 @@ void gba_rumble_init_cart(enum GBARumbleCartType cart_type)
             gba_rumble_ds_init();
             cart_rumble_update_func = gba_rumble_ds_update;
             break;
-        case gba_rumble_cart_ezode:
+        case gba_rumble_cart_ezflash:
             gba_rumble_ezflash_init();
             cart_rumble_update_func = gba_rumble_ezflash_update;
             break;

@@ -16,7 +16,7 @@ enum GBARumbleCartType : uint8_t {
     gba_rumble_cart_uninitialized,
     gba_rumble_cart_rio,
     gba_rumble_cart_ds,
-    gba_rumble_cart_ezode,
+    gba_rumble_cart_ezflash,
 };
 
 void gba_rumble_init_gbp(struct GBARumbleGBPConfig gbp_config);

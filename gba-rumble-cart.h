@@ -6,9 +6,9 @@
 extern "C" {
 #endif
 
-#define EZODE_MIN_RUMBLE   0xF0
-#define EZODE_MED_RUMBLE   0xF1
-#define EZODE_MAX_RUMBLE   0xF2
+#define EZFLASH_MIN_RUMBLE   0xF0
+#define EZFLASH_MED_RUMBLE   0xF1
+#define EZFLASH_MAX_RUMBLE   0xF2
 #define EZ3IN1_STOP_RUMBLE 0x8
 
 // Initializes ROM GPIO Pin 3 Direction as Output.
