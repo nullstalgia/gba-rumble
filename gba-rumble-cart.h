@@ -6,11 +6,12 @@
 extern "C" {
 #endif
 
-#define EZODE_MAX_RUMBLE   0xF1
-#define EZ3IN1_MAX_RUMBLE  0x7
+#define EZODE_MIN_RUMBLE   0xF0
+#define EZODE_MED_RUMBLE   0xF1
+#define EZODE_MAX_RUMBLE   0xF2
 #define EZ3IN1_STOP_RUMBLE 0x8
 
-// Initializes ROM GPIO Pin 3 Direction as Output,
+// Initializes ROM GPIO Pin 3 Direction as Output.
 void gba_rumble_rio_init();
 
 // Set RIO Rumble active state.
@@ -19,37 +20,21 @@ void gba_rumble_rio_init();
 // (Useful if you intend to share the ROM IO pins with RTC or some other custom setup.)
 void gba_rumble_rio_update(bool rumble);
 
+// Initializes DS Rumble Pak's actuator to Idle state.
+void gba_rumble_ds_init();
+
+// Flick DS Rumble Pak's actuator to specified direction, flick several times per second for continuous rumble.
+void gba_rumble_ds_update(bool direction);
+
 // Initalize EZ-Flash Omega Definitive Edition's Rumble, sets strength to max and sets state to idle.
-void gba_rumble_ezode_init();
+void gba_rumble_ezflash_init();
 
-// Sets strength to be used when EZODE Rumble is triggered.
-void gba_rumble_ezode_strength(uint16_t rumble_strength);
+// Set EZODE/3-in-1 Rumble active state.
+void gba_rumble_ezflash_update(bool rumble);
 
-// Set EZODE Rumble active state.
-void gba_rumble_ezode_update(bool rumble);
-
-// Initalize EZ-Flash 3-in-1's Rumble, sets strength to max and sets state to idle.
-void gba_rumble_ez3in1_init();
-
-// Sets strength to be used when EZ3in-1 Rumble is triggered.
-void gba_rumble_ez3in1_strength(uint16_t rumble_strength);
-
-// Set EZ3in-1 Rumble active state.
-void gba_rumble_ez3in1_update(bool rumble);
-
-// On an EZ-Flash Omega Definitive Edition, this supposedly sets the strength of the rumble, but doesn't itself activate it.
+// On an EZ-Flash Omega Definitive Edition and 3-in-1, this supposedly sets the strength of the rumble, but doesn't itself activate it.
 //
-// Documented ranges and personal testing conflict, but the consistent factor is that `0xF1` doesn't _not_ work.
-//
-// On an EZ-Flash 3-in-1, this sets the active Rumble state directly. This pseudo-register's
-// behavior isn't yet fully documented either, but the best guess is:
-// 0 - 0b0000_0000 - off(?)
-// 1 - 0b0000_0001 - low
-// 3 - 0b0000_0011 - medium
-// 7 - 0b0000_0111 - high0
-// 8 - 0b0000_1xxx - stop(?)
-//
-// ?: Apparently writing 8 is more reliable than 0 for halting active rumble, according to the GBATemp post.
+// https://github.com/VeaNika/GBARunner3/commit/84681c16918eea1c122474c8d7e0caa0771bdba8#diff-5064eb4a236b30f048ece54356370b3b2c56fd92057e35fab84a0947623c15e8
 //
 // https://gbatemp.net/threads/gamecube-gba-rumble-games-and-rom-hacked-rumble.589863/page-2#post-10236322 <3
 //

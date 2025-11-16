@@ -56,8 +56,13 @@ typedef unsigned short u16;
 
 #define R_NORMAL 0x0000
 
-// Shared Local Variables
-static enum GBARumbleState rumble_state = gba_rumble_stop;
+// Shared Local Variables and Types
+enum GBARumbleState {
+    rumble_start     = 0x40000026,
+    rumble_stop      = 0x40000004,
+    rumble_hard_stop = 0x40000015,
+};
+static enum GBARumbleState rumble_state = rumble_stop;
 
 // Cartridge Rumble Variables
 static enum GBARumbleCartType rumble_cart_type = gba_rumble_cart_uninitialized;
@@ -180,7 +185,7 @@ static void gbp_serial_isr()
 
 void gba_rumble_init_gbp(struct GBARumbleGBPConfig config)
 {
-    rumble_state = gba_rumble_stop;
+    rumble_state = rumble_stop;
 
     config.serial_irq_setup_(gbp_serial_isr);
     REG_RCNT = R_NORMAL;
@@ -197,20 +202,24 @@ void gba_rumble_init_gbp(struct GBARumbleGBPConfig config)
 void gba_rumble_init_cart(enum GBARumbleCartType cart_type)
 {
     // Set previous rumble cart impl's state to idle, in case cart supports both (i.e. ChisFlash v1.2)
-    gba_rumble_update(gba_rumble_stop);
+    gba_rumble_stop();
+
+    // Prevent any spurious activations when GBP is enabled.
+    if (gbp_configured)
+        return;
 
     switch (cart_type) {
         case gba_rumble_cart_rio:
             gba_rumble_rio_init();
             cart_rumble_update_func = gba_rumble_rio_update;
             break;
-        case gba_rumble_cart_ezode:
-            gba_rumble_ezode_init();
-            cart_rumble_update_func = gba_rumble_ezode_update;
+        case gba_rumble_cart_ds:
+            gba_rumble_ds_init();
+            cart_rumble_update_func = gba_rumble_ds_update;
             break;
-        case gba_rumble_cart_ez3in1:
-            gba_rumble_ez3in1_init();
-            cart_rumble_update_func = gba_rumble_ez3in1_update;
+        case gba_rumble_cart_ezode:
+            gba_rumble_ezflash_init();
+            cart_rumble_update_func = gba_rumble_ezflash_update;
             break;
 
         default:
@@ -218,7 +227,7 @@ void gba_rumble_init_cart(enum GBARumbleCartType cart_type)
     }
     rumble_cart_type = cart_type;
 
-    gba_rumble_update(gba_rumble_stop);
+    gba_rumble_stop();
 }
 
 void gba_rumble_loop()
@@ -233,16 +242,43 @@ void gba_rumble_loop()
     }
 }
 
-void gba_rumble_update(enum GBARumbleState state)
+static inline bool should_cart_rumble() {
+    if (gbp_configured)
+        return false;
+
+    if (rumble_cart_type == gba_rumble_cart_uninitialized)
+        return false;
+
+    if (!cart_rumble_update_func)
+        return false;
+
+    return true;
+}
+
+void gba_rumble_start()
 {
-    rumble_state = state;
+    rumble_state = rumble_start;
 
-    if (!gbp_configured && rumble_cart_type != gba_rumble_cart_uninitialized) {
-        if (!cart_rumble_update_func)
-            return;
+    if (should_cart_rumble()) {
+        cart_rumble_update_func(true);
+    }
+}
 
-        const bool rumble_on = state == gba_rumble_start;
+void gba_rumble_stop()
+{
+    rumble_state = rumble_stop;
 
-        cart_rumble_update_func(rumble_on);
+    if (should_cart_rumble()) {
+        cart_rumble_update_func(false);
+    }
+}
+
+
+void gba_rumble_hard_stop()
+{
+    rumble_state = rumble_hard_stop;
+
+    if (should_cart_rumble()) {
+          cart_rumble_update_func(false);
     }
 }

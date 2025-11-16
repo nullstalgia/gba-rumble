@@ -3,7 +3,8 @@
 #define RIO_PORT_DATA        (*(volatile uint16_t *)0x80000C4)
 #define RIO_PORT_DIRECTION   (*(volatile uint16_t *)0x80000C6)
 
-static uint16_t s_EZ3in1_strength = EZ3IN1_MAX_RUMBLE;  // Defaults to max strength of EZ3-in-1.
+// This also seems to control the ChisFlash v1.2 Rumble, in addition to the more "standard" ROM GPIO control.
+#define DS_RUMBLE_PAK_ADDR   (*(volatile uint16_t *)0x8001000)
 
 void gba_rumble_rio_init() {
     // Set ROM GPIO Pin 3 to Output
@@ -26,33 +27,25 @@ void gba_rumble_rio_update(bool rumble_on) {
     #endif
 }
 
-void gba_rumble_ezode_init() {
-    gba_rumble_ezode_strength(EZODE_MAX_RUMBLE);
+void gba_rumble_ds_init() {
+    DS_RUMBLE_PAK_ADDR = 0;
 }
 
-void gba_rumble_ezode_strength(uint16_t rumble_strength) {
-    gba_rumble_ezflash_write_rumble(rumble_strength);
+void gba_rumble_ds_update(bool direction) {
+    DS_RUMBLE_PAK_ADDR = (direction << 1);
 }
 
-void gba_rumble_ezode_update(bool rumble_on) {
-    // This also seems to control the ChisFlash v1.2 Rumble, in addition to the more "standard" ROM GPIO control.
-    (*(volatile uint16_t *)0x8001000) = (rumble_on << 1);
+void gba_rumble_ezflash_init() {
+    gba_rumble_rio_init();
+    gba_rumble_ds_init();
+    gba_rumble_ezflash_write_rumble(EZ3IN1_STOP_RUMBLE);
+    gba_rumble_ezflash_write_rumble(EZODE_MIN_RUMBLE);
 }
 
-void gba_rumble_ez3in1_init() {
-    s_EZ3in1_strength = EZ3IN1_MAX_RUMBLE;
-}
-
-void gba_rumble_ez3in1_strength(uint16_t rumble_strength) {
-    s_EZ3in1_strength = rumble_strength;
-}
-
-void gba_rumble_ez3in1_update(bool rumble_on) {
-    if (rumble_on) {
-        gba_rumble_ezflash_write_rumble(s_EZ3in1_strength);
-    } else {
-        gba_rumble_ezflash_write_rumble(EZ3IN1_STOP_RUMBLE);
-    }
+void gba_rumble_ezflash_update(bool rumble_on) {
+    // Also uses the DS Rumble Pak control address.
+    gba_rumble_ds_update(rumble_on);
+    gba_rumble_rio_update(rumble_on);
 }
 
 void gba_rumble_ezflash_write_rumble(uint16_t rumble_strength) {

@@ -12,17 +12,11 @@ struct GBARumbleGBPConfig {
 };
 
 
-enum GBARumbleState {
-    gba_rumble_start     = 0x40000026,
-    gba_rumble_stop      = 0x40000004,
-    gba_rumble_hard_stop = 0x40000015,
-};
-
 enum GBARumbleCartType : uint8_t {
     gba_rumble_cart_uninitialized,
     gba_rumble_cart_rio,
+    gba_rumble_cart_ds,
     gba_rumble_cart_ezode,
-    gba_rumble_cart_ez3in1,
 };
 
 void gba_rumble_init_gbp(struct GBARumbleGBPConfig gbp_config);
@@ -33,7 +27,11 @@ void gba_rumble_init_cart(enum GBARumbleCartType cart_type);
 void gba_rumble_loop();
 
 // set new active rumble state
-void gba_rumble_update(enum GBARumbleState state);
+
+void gba_rumble_start();
+void gba_rumble_stop();
+// GBP-only
+void gba_rumble_hard_stop();
 
 #ifdef __cplusplus
 }
