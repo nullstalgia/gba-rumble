@@ -234,11 +234,6 @@ void gba_rumble_loop()
 {
     if (gbp_configured) {
         gbp_serial_start();
-    } else if (rumble_cart_type == gba_rumble_cart_rio) {
-        // Ensure ROM GPIO direction is correct.
-        // (Leaving this out of the update function in case update is called
-        // in an ISR, admittedely shaving off only just a couple cycles.)
-        gba_rumble_rio_init();
     }
 }
 
